@@ -1,17 +1,26 @@
-/** @type {import('next').NextConfig} */
-const nextConfig = {
+import type { NextConfig } from 'next'
+
+const nextConfig: NextConfig = {
   images: {
-    domains: [
-      'localhost',
-      'res.cloudinary.com',
-      'facequizz.com'
+    remotePatterns: [
+      {
+        protocol: 'https',
+        hostname: 'localhost',
+      },
+      {
+        protocol: 'https',
+        hostname: 'res.cloudinary.com',
+      },
+      {
+        protocol: 'https',
+        hostname: 'facequizz.com',
+      }
     ],
     formats: ['image/webp', 'image/avif'],
   },
-  // Enable RTL support
-  i18n: {
-    locales: ['ar'],
-    defaultLocale: 'ar',
+  // Enable experimental features
+  experimental: {
+    typedRoutes: true,
   },
   // Optimize for production
   poweredByHeader: false,
@@ -36,7 +45,7 @@ const nextConfig = {
           },
         ],
       },
-    ];
+    ]
   },
   // Redirects for SEO
   async redirects() {
@@ -51,8 +60,8 @@ const nextConfig = {
         destination: '/quiz/:id',
         permanent: true,
       },
-    ];
+    ]
   },
-};
+}
 
-module.exports = nextConfig;
+export default nextConfig

@@ -1,10 +1,10 @@
-import { NextAuthOptions } from 'next-auth';
-import { PrismaAdapter } from '@auth/prisma-adapter';
-import CredentialsProvider from 'next-auth/providers/credentials';
-import { prisma } from '@/lib/prisma';
-import { compare } from 'bcryptjs';
+import type { AuthOptions } from 'next-auth'
+import { PrismaAdapter } from '@auth/prisma-adapter'
+import CredentialsProvider from 'next-auth/providers/credentials'
+import { prisma } from '@/lib/prisma'
+import { compare } from 'bcryptjs'
 
-export const authOptions: NextAuthOptions = {
+export const authOptions: AuthOptions = {
     adapter: PrismaAdapter(prisma),
     session: {
         strategy: 'jwt',
@@ -12,6 +12,7 @@ export const authOptions: NextAuthOptions = {
     pages: {
         signIn: '/auth/login',
         signUp: '/auth/register',
+        error: '/auth/error',
     },
     providers: [
         CredentialsProvider({
@@ -22,23 +23,23 @@ export const authOptions: NextAuthOptions = {
             },
             async authorize(credentials) {
                 if (!credentials?.username || !credentials?.password) {
-                    return null;
+                    throw new Error('اسم المستخدم وكلمة المرور مطلوبان')
                 }
 
                 const user = await prisma.user.findUnique({
                     where: {
                         username: credentials.username
                     }
-                });
+                })
 
                 if (!user || !user.password) {
-                    return null;
+                    throw new Error('المستخدم غير موجود')
                 }
 
-                const isPasswordValid = await compare(credentials.password, user.password);
+                const isPasswordValid = await compare(credentials.password, user.password)
 
                 if (!isPasswordValid) {
-                    return null;
+                    throw new Error('كلمة المرور غير صحيحة')
                 }
 
                 return {
@@ -47,26 +48,27 @@ export const authOptions: NextAuthOptions = {
                     title: user.title,
                     email: user.email,
                     userType: user.userType,
-                };
+                }
             }
         })
     ],
     callbacks: {
         async jwt({ token, user }) {
             if (user) {
-                token.username = user.username;
-                token.userType = user.userType;
-                token.title = user.title;
+                token.username = user.username
+                token.userType = user.userType
+                token.title = user.title
             }
-            return token;
+            return token
         },
         async session({ session, token }) {
             if (token) {
-                session.user.username = token.username as string;
-                session.user.userType = token.userType as string;
-                session.user.title = token.title as string;
+                session.user.username = token.username as string
+                session.user.userType = token.userType as string
+                session.user.title = token.title as string | undefined
             }
-            return session;
+            return session
         },
     },
-};
+    secret: process.env.NEXTAUTH_SECRET,
+}

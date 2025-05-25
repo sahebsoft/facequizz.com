@@ -1,8 +1,8 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { authOptions } from '@/lib/auth';
-import { prisma } from '@/lib/prisma';
-import { z } from 'zod';
-import { getServerSession } from 'next-auth/next';
+import { NextRequest, NextResponse } from 'next/server'
+import { getServerSession } from 'next-auth/next'
+import { authOptions } from '@/lib/auth'
+import { prisma } from '@/lib/prisma'
+import { z } from 'zod'
 
 const createQuizSchema = z.object({
     title: z.string().min(1).max(200),
@@ -13,18 +13,18 @@ const createQuizSchema = z.object({
     scoreFlag: z.number().int().min(0).max(2).default(2),
     starFlag: z.boolean().default(false),
     status: z.number().int().min(1).max(2).default(2)
-});
+})
 
 export async function POST(request: NextRequest) {
     try {
-        const session = await getServerSession(authOptions);
+        const session = await getServerSession(authOptions)
 
         if (!session?.user?.username) {
-            return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+            return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
         }
 
-        const body = await request.json();
-        const data = createQuizSchema.parse(body);
+        const body = await request.json()
+        const data = createQuizSchema.parse(body)
 
         const quiz = await prisma.quiz.create({
             data: {
@@ -41,42 +41,42 @@ export async function POST(request: NextRequest) {
                 },
                 results: true
             }
-        });
+        })
 
-        return NextResponse.json(quiz, { status: 201 });
+        return NextResponse.json(quiz, { status: 201 })
 
     } catch (error) {
-        console.error('Error creating quiz:', error);
+        console.error('Error creating quiz:', error)
 
         if (error instanceof z.ZodError) {
             return NextResponse.json({
                 error: 'Invalid quiz data',
                 details: error.errors
-            }, { status: 400 });
+            }, { status: 400 })
         }
 
-        return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+        return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
     }
 }
 
 export async function GET(request: NextRequest) {
     try {
-        const session = await getServerSession(authOptions);
+        const session = await getServerSession(authOptions)
 
         if (!session?.user?.username) {
-            return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+            return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
         }
 
-        const { searchParams } = new URL(request.url);
-        const page = parseInt(searchParams.get('page') || '1');
-        const limit = parseInt(searchParams.get('limit') || '10');
-        const skip = (page - 1) * limit;
+        const { searchParams } = new URL(request.url)
+        const page = parseInt(searchParams.get('page') || '1')
+        const limit = parseInt(searchParams.get('limit') || '10')
+        const skip = (page - 1) * limit
 
-        const where: any = {};
+        const where: any = {}
 
         // Non-admin users can only see their own quizzes
         if (session.user.userType !== 'a') {
-            where.username = session.user.username;
+            where.username = session.user.username
         }
 
         const [quizzes, total] = await Promise.all([
@@ -97,7 +97,7 @@ export async function GET(request: NextRequest) {
                 take: limit
             }),
             prisma.quiz.count({ where })
-        ]);
+        ])
 
         return NextResponse.json({
             quizzes,
@@ -107,10 +107,10 @@ export async function GET(request: NextRequest) {
                 total,
                 totalPages: Math.ceil(total / limit)
             }
-        });
+        })
 
     } catch (error) {
-        console.error('Error fetching admin quizzes:', error);
-        return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+        console.error('Error fetching admin quizzes:', error)
+        return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
     }
 }
